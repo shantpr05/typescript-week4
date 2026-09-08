@@ -104,7 +104,7 @@ const showMessage = (message: string) => {
 
 sendMessages(showMessage);
 
-//m7. Download Simulation
+// 7. Download Simulation
 
 type downloadFunction = (status: string) => void;
 
@@ -124,3 +124,102 @@ const showDownloadedData = (data: string) => {
 
 downloadFile("https://example.com/file.zip", showDownloadedData);
 
+// 8. Success and Error Callback
+
+type successFunction = (message: string) => void;
+type errorFunction = (errorMessage: string) => void;
+
+const processSomething = (
+    successCallback: successFunction,
+    errorCallback: errorFunction    
+) => {
+    const success = Math.random() > 0.5; // Simulating success or error randomly
+    if (success) {
+        successCallback("Process completed successfully!"); 
+    } else {
+        errorCallback("An error occurred during the process.");
+    }
+};
+
+const showSuccess = (message: string) => {
+    console.log("Success: ", message);
+};
+
+const showError = (errorMessage: string) => {
+    console.log("Error: ", errorMessage);
+};
+
+processSomething(showSuccess, showError);
+
+// 9. Math with Different Operations
+
+type mathFunction = (result: number) => void;  
+
+const calculate = (
+    num1: number,
+    num2: number,
+    operation: string,      
+    callback: mathFunction
+) => {
+    let result: number;
+
+    if (operation === "add") {
+        result = num1 + num2;
+    } else if (operation === "subtract") {
+        result = num1 - num2;
+    } else if (operation === "multiply") {
+        result = num1 * num2;
+    }  else if (operation === "divide") {
+        result = num1 / num2;
+    } else {
+        console.log("Invalid operation");
+        return;
+    }
+
+    callback(result);
+};
+
+const showMathResult = (result: number) => {
+    console.log("The result is: ", result);
+};
+
+calculate(10, 5, "add", showMathResult);
+calculate(10, 5, "subtract", showMathResult);
+calculate(10, 5, "multiply", showMathResult);
+calculate(10, 5, "divide", showMathResult);
+
+
+// 10. Chained Callbacks
+
+type StepDoneFunction = (step: string) => void;
+
+const step1 = (callback: StepDoneFunction) => {
+    setTimeout(() => {
+        console.log("Step 1 completed");
+        callback("Step 1 done");
+    }, 1000);
+};
+
+const step2 = (callback: StepDoneFunction) => {
+    setTimeout(() => {
+        console.log("Step 2 completed");
+        callback("Step 2 done");
+    }, 1000);   
+};
+
+const step3 = (callback: StepDoneFunction) => {
+    setTimeout(() => {
+        console.log("Step 3 completed");
+        callback("Step 3 done");
+    }, 1000);
+};
+
+const finish = () => {
+    console.log("All steps completed!");
+};
+
+step1(() => {
+    step2(() => {
+        step3(finish);
+    });
+});
