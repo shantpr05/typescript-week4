@@ -1,106 +1,216 @@
-# Week 5 - HTTP & Express Homework
+# Week 6 - HTTP & Express CRUD
 
-## Topic
+## Swedish 2026 Riksdag Election API
 
-My Programming Collection
+This project is a simple CRUD API built with TypeScript and Express.
 
-This project is a simple Express API about programming languages,
-web development frameworks, and development tools.
+The API uses an in-memory array of Swedish political parties and demonstrates:
 
-The project uses TypeScript and Express.
+* GET
+* POST
+* PUT
+* DELETE
+* req.body
+* req.params
+* HTTP status codes
+* JSON responses
+
+The initial party seat data is based on the confirmed 2026 Swedish parliamentary election result published by Sveriges riksdag.
 
 ## How to Run
 
 Install dependencies:
 
+```bash
 npm install
+```
 
-Start the server:
+Start the development server:
 
-npm start
+```bash
+npm run dev
+```
 
-The server runs at:
+Server:
 
+```text
 http://localhost:3000
+```
 
 ## API Routes
 
-| Method | Path | Description | Expected Status |
-|---|---|---|---|
-| GET | / | Returns a welcome message | 200 OK |
-| GET | /collection | Returns programming categories and lastUpdated | 200 OK |
-| GET | /about | Returns information about the collection | 200 OK |
-| GET | /message | Returns a plain-text message | 200 OK |
-| GET | /languages | Returns programming languages as JSON | 200 OK |
-| GET | /maintenance | Returns a maintenance message | 503 Service Unavailable |
-| GET | /does-not-exist | Route that does not exist | 404 Not Found |
+### GET /parties
 
-## Task Details
+Returns all parties.
 
-### Task 1
+Status:
 
-Created a homepage route using res.send().
+```text
+200 OK
+```
 
-### Task 2
+### POST /parties
 
-Created a main collection route using res.json().
-The response contains a title, three categories, and a lastUpdated field.
+Creates a new party.
 
-### Task 3
+Request body:
 
-Tested the homepage and collection routes using Insomnia.
+```json
+{
+  "name": "Test Party",
+  "leader": "Test Leader",
+  "seats": 10
+}
+```
 
-### Task 4
+Success status:
 
-Created an /about route that returns descriptive JSON information.
+```text
+201 Created
+```
 
-### Task 5
+### PUT /parties/:id
 
-Created a /message route using res.send().
-This route returns plain text, so res.send() is suitable.
+Updates an existing party.
 
-### Task 6
+Example:
 
-Added comments explaining expected HTTP status codes.
-Tested a route that does not exist and received 404 Not Found.
+```text
+PUT /parties/1
+```
 
-### Task 7
+Request body:
 
-Created a /languages route using res.status(200).json().
+```json
+{
+  "name": "Updated Party",
+  "leader": "Updated Leader",
+  "seats": 100
+}
+```
 
-### Task 8
+Success status:
 
-Created a /maintenance route that intentionally returns
-503 Service Unavailable.
+```text
+200 OK
+```
+
+If the party does not exist:
+
+```text
+404 Not Found
+```
+
+### DELETE /parties/:id
+
+Deletes an existing party.
+
+Example:
+
+```text
+DELETE /parties/9
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+If the party does not exist:
+
+```text
+404 Not Found
+```
+
+### GET /parties/seats-total
+
+Returns the total number of seats.
+
+Example response:
+
+```json
+{
+  "totalSeats": 349
+}
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+### GET /parties/:id
+
+Returns one party by ID.
+
+Example:
+
+```text
+GET /parties/1
+```
+
+Success status:
+
+```text
+200 OK
+```
+
+If the party does not exist:
+
+```text
+404 Not Found
+```
+
+## Error Handling
+
+### Missing required fields
+
+If `name` or `leader` is missing when creating a party:
+
+```text
+400 Bad Request
+```
+
+Example response:
+
+```json
+{
+  "error": "Name and leader are required."
+}
+```
 
 ## Insomnia Screenshots
 
-Add screenshots below each route after testing.
+### GET /parties
 
-### Homepage
+Add screenshot here.
 
-Paste your Insomnia screenshot here.
+### POST /parties - 201 Created
 
-### Collection
+Add screenshot here.
 
-Paste your Insomnia screenshot here.
+### POST /parties - 400 Bad Request
 
-### About
+Add screenshot here.
 
-Paste your Insomnia screenshot here.
+### PUT /parties/:id - 200 OK
 
-### Message
+Add screenshot here.
 
-Paste your Insomnia screenshot here.
+### PUT /parties/:id - 404 Not Found
 
-### Languages
+Add screenshot here.
 
-Paste your Insomnia screenshot here.
+### DELETE /parties/:id - 200 OK
 
-### Maintenance
+Add screenshot here.
 
-Paste your Insomnia screenshot here.
+### GET /parties/seats-total
 
-### Not Found Route
+Add screenshot here.
 
-Paste your Insomnia screenshot here.
+### GET /parties/:id
+
+Add screenshot here.
