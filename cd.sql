@@ -11,11 +11,11 @@ SELECT *
 FROM cd.facilities
 WHERE membercost > 0;
 
--- Exercise 4: WHERE part 2
-SELECT *
+-- Exercise 4: Control which rows are retrieved - part 2
+SELECT facid, name, membercost, monthlymaintenance
 FROM cd.facilities
 WHERE membercost > 0
-  AND guestcost > 10;
+  AND membercost < monthlymaintenance / 50.0;
 
 -- Exercise 5: LIKE
 SELECT *
@@ -27,41 +27,40 @@ SELECT *
 FROM cd.facilities
 WHERE facid IN (1, 5);
 
--- Exercise 7: CASE
-SELECT name,
+-- Exercise 7: CASE -- Exercise 7: Classify results into buckets
+SELECT name,       
        CASE
-           WHEN membercost = 0 THEN 'Free'
-           ELSE 'Paid'
-       END AS cost_type
+           WHEN monthlymaintenance > 100 THEN 'expensive'
+           ELSE 'cheap'
+       END AS cost
 FROM cd.facilities;
 
 -- Exercise 8: Dates
-SELECT *
-FROM cd.bookings
-WHERE starttime >= '2012-09-01'
-  AND starttime < '2012-10-01';
+SELECT memid, surname, firstname, joindate
+FROM cd.members
+WHERE joindate >= '2012-09-01'
+  
 
 -- Exercise 9: DISTINCT + ORDER BY
-SELECT DISTINCT memid
-FROM cd.bookings
-ORDER BY memid;
+SELECT DISTINCT surname
+FROM cd.members
+ORDER BY surname
+LIMIT 10;
 
 -- Exercise 10: UNION
-SELECT firstname
-FROM cd.members
-UNION
 SELECT surname
 FROM cd.members
-ORDER BY 1;
+UNION
+SELECT name
+FROM cd.facilities
+
 
 -- Exercise 11: MAX / COUNT
-SELECT MAX(guestcost) AS highest_guest_cost,
-       COUNT(*) AS facility_count
-FROM cd.facilities;
+select max(joindate) as latest
+	from cd.members; 
 
 -- Exercise 12: More aggregation
-SELECT facid,
-       COUNT(*) AS booking_count
-FROM cd.bookings
-GROUP BY facid
-ORDER BY facid;
+SELECT firstname, surname, joindate
+        FROM cd.members
+        WHERE joindate = (SELECT MAX(joindate) FROM cd.members);
+       
