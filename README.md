@@ -1,102 +1,121 @@
-# SQL Basics Homework
+# SQL Joins, Relationships & Subqueries
 
-This project is part of the SQL Basics homework. The project uses Docker, PostgreSQL and pgAdmin to work with the Country Club database and practise basic SQL queries.
+## Overview
 
-## Technologies
+This assignment focuses on understanding database relationships and practising SQL queries using PostgreSQL. It builds on the previous week's work with Docker, PostgreSQL, pgAdmin, and the Country Club database.
 
-* PostgreSQL
-* pgAdmin
-* Docker / Docker Compose
-* SQL
+The assignment covers one-to-one, one-to-many, and many-to-many relationships, primary keys, foreign keys, different types of JOINs, and subqueries.
 
-## Database
+## Learning Objectives
 
-The project uses the Country Club dataset from [pgExercises](https://pgexercises.com/).
+- Understand how tables are connected using primary keys and foreign keys.
+- Create one-to-one, one-to-many, and many-to-many relationships.
+- Use composite primary keys to prevent duplicate records.
+- Retrieve data from multiple tables using `INNER JOIN` and `LEFT JOIN`.
+- Practise self-joins to retrieve related records from the same table.
+- Use subqueries to retrieve and filter data.
+- Understand how to calculate booking costs using conditional expressions.
 
-The database contains the following schema and tables:
+## Technologies Used
 
-* `cd.facilities`
-* `cd.members`
-* `cd.bookings`
+- PostgreSQL
+- pgAdmin 4
+- Docker and Docker Compose
+- SQL
+- Git and GitHub
 
-## SQL Exercises
+## Project Structure
 
-The `cd.sql` file contains solutions for the PostgreSQL Basic SQL exercises:
+```text
+week7/sqljoins/
+├── compose.yml
+├── relationships.sql
+├── joins.sql
+├── .env
+└── .gitignore
+```
 
-1. Retrieve everything from a table
-2. Retrieve specific columns
-3. WHERE
-4. WHERE part 2
-5. LIKE
-6. IN
-7. CASE
-8. Dates
-9. DISTINCT and ORDER BY
-10. UNION
-11. MAX and COUNT
-12. Aggregation
+- **compose.yml** – Configures the PostgreSQL and pgAdmin containers.
+- **relationships.sql** – Creates example tables, inserts sample data, and demonstrates database relationships.
+- **joins.sql** – Contains the Country Club relationship explanations and solutions to the JOIN and subquery exercises.
+- **.env** – Stores environment variables used by Docker Compose.
+- **.gitignore** – Prevents sensitive files such as `.env` from being committed to GitHub.
 
-Each exercise is separated with a comment explaining its purpose.
+## Part 1: Database Relationships
 
-## Docker Setup
+The `relationships.sql` file demonstrates three types of relationships.
 
-The project uses Docker Compose to run:
+### 1. One-to-One Relationship
 
-* PostgreSQL
-* pgAdmin
+Uses `users` and `profiles` tables. Each profile belongs to one user, and a `UNIQUE` constraint on `user_id` ensures that a user cannot have multiple profiles.
 
-Start the containers with:
+### 2. One-to-Many Relationship
+
+Uses `authors` and `books` tables. One author can have multiple books, and the foreign key `author_id` connects each book to its author.
+
+### 3. Many-to-Many Relationship
+
+Uses `students`, `courses`, and `student_courses` tables. Students can enrol in multiple courses, and each course can have multiple students. A composite primary key prevents duplicate student-course combinations.
+
+The file also demonstrates how foreign key and primary key constraints prevent invalid or duplicate records.
+
+## Part 2: Country Club Relationships
+
+The Country Club database contains three main tables:
+
+- `cd.members` – Stores member information.
+- `cd.bookings` – Stores facility bookings made by members.
+- `cd.facilities` – Stores information about the available facilities.
+
+The `bookings` table connects members and facilities. The `recommendedby` column in `cd.members` references another member in the same table, demonstrating a self-referencing relationship.
+
+## Part 3: JOINs and Subqueries
+
+The `joins.sql` file contains solutions to eight exercises:
+
+1. Retrieve the start times of a member's bookings.
+2. Retrieve booking start times for tennis courts.
+3. List members who have recommended another member.
+4. List all members along with their recommenders.
+5. List members who have used a tennis court.
+6. Retrieve costly bookings using conditional cost calculations.
+7. List members and their recommenders using subqueries instead of JOINs.
+8. Retrieve costly bookings using a subquery.
+
+These exercises practise `INNER JOIN`, `LEFT JOIN`, self-joins, multiple-table JOINs, `CASE` expressions, and subqueries.
+
+## How to Run the Project
+
+### 1. Start Docker containers
+
+Make sure Docker Desktop is running, then execute the following command in the project directory:
 
 ```bash
 docker compose up -d
 ```
 
-Check that the containers are running:
+### 2. Open pgAdmin
 
-```bash
-docker container ls
-```
+Open [http://localhost:8080](http://localhost:8080) in your browser and connect to the PostgreSQL server.
 
-pgAdmin is available at:
+### 3. Select the database
 
-```text
-http://localhost:8080
-```
+Choose the database containing the Country Club data. Use the same database for both SQL files.
 
-## Running the SQL
+### 4. Run the SQL files
 
-After connecting pgAdmin to the PostgreSQL database, open the Query Tool and run the SQL queries from `cd.sql`.
+Open the Query Tool in pgAdmin and execute `relationships.sql` to create the example tables and insert sample data.
 
-For example:
+Then execute `joins.sql` to run the Country Club JOIN and subquery exercises.
 
-```sql
-SELECT * FROM cd.facilities;
-```
+Check the Data Output panel to verify the results and confirm that the queries execute successfully.
 
-## Project Structure
+## Security
 
-```text
-typescript-week4/
-│
-├── compose.yml
-├── .env
-├── .gitignore
-├── cd.sql
-└── README.md
-```
+Database credentials and other sensitive environment variables are stored in `.env`. This file is excluded from version control using `.gitignore` and should not be committed to GitHub.
 
-## Environment Variables
+## What I Learned
 
-Database credentials are stored in `.env`.
+Through this assignment, I practised creating relational database tables, defining primary and foreign keys, and understanding how relationships work. I also gained experience retrieving related information from multiple tables using JOINs, handling missing related records with LEFT JOINs, and using subqueries to solve SQL problems.
 
-The `.env` file is included in `.gitignore` and should not be committed to GitHub.
-
-## Branch
-
-This homework is completed on the:
-
-```text
-week7-sqlbasics
-```
-
-branch.
+This assignment helped me understand how relational databases organise connected data and how SQL queries can retrieve meaningful information from it.
