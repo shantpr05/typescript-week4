@@ -1,15 +1,21 @@
 import "dotenv/config";
+import { env } from "./env.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import { pool } from "./db.js";
+import {
+  bookIdSchema,
+  bookQuerySchema,
+  bookSchema,
+} from "./schemas.js";
+import { z } from "zod";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(express.static(path.join(__dirname, "public")));
-const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
@@ -20,8 +26,23 @@ app.get("/", (req, res) => {
 
 
 app.get("/books", async (req, res) => {
-  const { genre, sortBy, order, search } = req.query;
+  const queryValidation = bookQuerySchema.safeParse(req.query);
 
+  if (!queryValidation.success) {
+    return res.status(400).json({
+      message: "Invalid query parameters",
+      errors: queryValidation.error.issues,
+    });
+  }
+
+  const {
+    genre,
+    search,
+    sortBy = "id",
+    order = "asc",
+    page = 1,
+    limit = 10,
+  } = queryValidation.data;
   const allowedColumns = [
     "id",
     "title",
@@ -35,9 +56,6 @@ app.get("/books", async (req, res) => {
 
   const sortOrder =
     order?.toLowerCase() === "desc" ? "DESC" : "ASC";
-
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
 
   if (
     !Number.isInteger(page) ||
@@ -87,7 +105,10 @@ app.get("/books", async (req, res) => {
       books: result.rows,
     });
   } catch (error) {
-    console.error("Error searching books:", error.message);
+    console.error(
+      "Error searching books:",
+      error instanceof Error ? error.message : error,
+    );
 
     res.status(500).json({
       message: "Internal server error",
@@ -97,7 +118,16 @@ app.get("/books", async (req, res) => {
 
 
 app.get("/books/:id", async (req, res) => {
-  const id = Number(req.params.id);
+  const idValidation = bookIdSchema.safeParse(req.params);
+
+  if (!idValidation.success) {
+    return res.status(400).json({
+      message: "Invalid book ID",
+      errors: idValidation.error.issues,
+    });
+  }
+
+  const { id } = idValidation.data;
 
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({
@@ -119,7 +149,10 @@ app.get("/books/:id", async (req, res) => {
 
     res.status(200).json(result.rows[0]);
   } catch (error) {
-    console.error("Error fetching book:", error.message);
+    console.error(
+      "Error fetching book:",
+      error instanceof Error ? error.message : error
+    );
 
     res.status(500).json({
       message: "Internal server error",
@@ -128,55 +161,33 @@ app.get("/books/:id", async (req, res) => {
 });
 
 
+
 app.post("/books", async (req, res) => {
-  const { title, genre, published_year } = req.body;
+  const validation = bookSchema.safeParse(req.body);
 
-  // Validate input
-  if (
-    typeof title !== "string" ||
-    title.trim() === ""
-  ) {
+  if (!validation.success) {
     return res.status(400).json({
-      message: "Title is required and must be a non-empty string",
+      message: "Invalid book data",
+      errors: validation.error.issues,
     });
   }
 
-  if (
-    genre !== undefined &&
-    genre !== null &&
-    typeof genre !== "string"
-  ) {
-    return res.status(400).json({
-      message: "Genre must be a string",
-    });
-  }
-
-  if (
-    published_year !== undefined &&
-    published_year !== null &&
-    (!Number.isInteger(published_year) ||
-      published_year < 0)
-  ) {
-    return res.status(400).json({
-      message: "Published year must be a non-negative integer",
-    });
-  }
+  const { title, genre, published_year } = validation.data;
 
   try {
     const result = await pool.query(
       `INSERT INTO books (title, genre, published_year)
        VALUES ($1, $2, $3)
        RETURNING *`,
-      [
-        title.trim(),
-        genre ?? null,
-        published_year ?? null,
-      ]
+      [title.trim(), genre, published_year],
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error creating book:", error.message);
+    console.error(
+      "Error creating book:",
+      error instanceof Error ? error.message : error,
+    );
 
     res.status(500).json({
       message: "Internal server error",
@@ -185,61 +196,37 @@ app.post("/books", async (req, res) => {
 });
 
 app.put("/books/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const { title, genre, published_year } = req.body;
 
-  // Validate book ID
-  if (!Number.isInteger(id) || id <= 0) {
+  const idValidation = bookIdSchema.safeParse(req.params);
+
+  if (!idValidation.success) {
     return res.status(400).json({
       message: "Invalid book ID",
+      errors: idValidation.error.issues,
     });
   }
 
-  // Validate required title
-  if (
-    typeof title !== "string" ||
-    title.trim() === ""
-  ) {
+  const id = idValidation.data.id;
+
+  const validation = bookSchema.safeParse(req.body);
+
+  if (!validation.success) {
     return res.status(400).json({
-      message: "Title is required and must be a non-empty string",
+      message: "Invalid book data",
+      errors: validation.error.issues,
     });
   }
 
-  if (
-    genre !== undefined &&
-    genre !== null &&
-    typeof genre !== "string"
-  ) {
-    return res.status(400).json({
-      message: "Genre must be a string",
-    });
-  }
-
-  if (
-    published_year !== undefined &&
-    published_year !== null &&
-    (!Number.isInteger(published_year) ||
-      published_year < 0)
-  ) {
-    return res.status(400).json({
-      message: "Published year must be a non-negative integer",
-    });
-  }
-
+  const { title, genre, published_year } = validation.data;
   try {
     const result = await pool.query(
       `UPDATE books
-       SET title = $1,
-           genre = $2,
-           published_year = $3
-       WHERE id = $4
-       RETURNING *`,
-      [
-        title.trim(),
-        genre ?? null,
-        published_year ?? null,
-        id,
-      ]
+      SET title = $1,
+          genre = $2,
+          published_year = $3
+      WHERE id = $4
+      RETURNING *`,
+      [title, genre, published_year, id],
     );
 
     if (result.rows.length === 0) {
@@ -248,26 +235,30 @@ app.put("/books/:id", async (req, res) => {
       });
     }
 
-    res.status(200).json(result.rows[0]);
+    return res.status(200).json(result.rows[0]);
   } catch (error) {
-    console.error("Error updating book:", error.message);
+    console.error(
+      "Error updating book:",
+      error instanceof Error ? error.message : error,
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Internal server error",
     });
   }
 });
 
-
 app.delete("/books/:id", async (req, res) => {
-  const id = Number(req.params.id);
+  const idValidation = bookIdSchema.safeParse(req.params);
 
-  // Validate book ID
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!idValidation.success) {
     return res.status(400).json({
       message: "Invalid book ID",
+      errors: idValidation.error.issues,
     });
   }
+
+  const { id } = idValidation.data;
 
   try {
     const result = await pool.query(
@@ -286,7 +277,10 @@ app.delete("/books/:id", async (req, res) => {
       book: result.rows[0],
     });
   } catch (error) {
-    console.error("Error deleting book:", error.message);
+    console.error(
+      "Error deleting book:",
+      error instanceof Error ? error.message : error,
+    );
 
     res.status(500).json({
       message: "Internal server error",
@@ -295,57 +289,48 @@ app.delete("/books/:id", async (req, res) => {
 });
 
 
-app.patch("/books/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const { title, genre, published_year } = req.body;
 
-  if (!Number.isInteger(id) || id <= 0) {
+app.patch("/books/:id", async (req, res) => {
+  const idValidation = bookIdSchema.safeParse(req.params);
+
+  if (!idValidation.success) {
     return res.status(400).json({
       message: "Invalid book ID",
+      errors: idValidation.error.issues,
     });
   }
 
-  const allowedFields = [
-    "title",
-    "genre",
-    "published_year",
-  ];
+  const id = idValidation.data.id;
 
-  const updates = [];
-  const values = [];
+  const patchBookSchema = bookSchema.partial().extend({
+    genre: z.string().nullable().optional(),
+    published_year: z.coerce.number().int().nonnegative().nullable().optional(),
+  });
+
+  const bodyValidation = patchBookSchema.safeParse(req.body);
+
+  if (!bodyValidation.success) {
+    return res.status(400).json({
+      message: "Invalid book data",
+      errors: bodyValidation.error.issues,
+    });
+  }
+
+  const allowedFields = ["title", "genre", "published_year"] as const;
+  const updates: string[] = [];
+  const values: unknown[] = [];
+  const data = bodyValidation.data;
 
   for (const field of allowedFields) {
-    if (Object.hasOwn(req.body, field)) {
-      const value = req.body[field];
+    if (Object.hasOwn(data, field)) {
+      updates.push(field);
+      const value = data[field];
 
-      if (field === "title") {
-        if (typeof value !== "string" || value.trim() === "") {
-          return res.status(400).json({
-            message: "Title must be a non-empty string",
-          });
-        }
-        updates.push("title");
-        values.push(value.trim());
-      } else if (field === "genre") {
-        if (value !== null && typeof value !== "string") {
-          return res.status(400).json({
-            message: "Genre must be a string or null",
-          });
-        }
-        updates.push("genre");
-        values.push(value);
-      } else if (field === "published_year") {
-        if (
-          value !== null &&
-          (!Number.isInteger(value) || value < 0)
-        ) {
-          return res.status(400).json({
-            message: "Published year must be a non-negative integer or null",
-          });
-        }
-        updates.push("published_year");
-        values.push(value);
-      }
+      values.push(
+        field === "title" && typeof value === "string"
+          ? value.trim()
+          : value,
+      );
     }
   }
 
@@ -364,7 +349,7 @@ app.patch("/books/:id", async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE books SET ${setClause} WHERE id = $${values.length} RETURNING *`,
-      values
+      values,
     );
 
     if (result.rows.length === 0) {
@@ -375,13 +360,16 @@ app.patch("/books/:id", async (req, res) => {
 
     res.status(200).json(result.rows[0]);
   } catch (error) {
-    console.error("Error updating book:", error.message);
+    console.error(
+      "Error updating book:",
+      error instanceof Error ? error.message : error,
+    );
+
     res.status(500).json({
       message: "Internal server error",
     });
   }
 });
-
 
 app.post("/loans", async (req, res) => {
   const { member_id, book_id } = req.body;
@@ -407,19 +395,32 @@ app.post("/loans", async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    if (error.code === "23505") {
+    if (
+      typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  error.code === "23505"
+    ) {
       return res.status(409).json({
         message: "This book is already on loan",
       });
     }
 
-    if (error.code === "23503") {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23503"
+    ) {
       return res.status(400).json({
         message: "Member or book does not exist",
       });
     }
 
-    console.error("Error creating loan:", error.message);
+    console.error(
+      "Error creating loan:",
+      error instanceof Error ? error.message : error
+    );
     res.status(500).json({
       message: "Internal server error",
     });
@@ -456,7 +457,10 @@ app.patch("/loans/:id/return", async (req, res) => {
       loan: result.rows[0],
     });
   } catch (error) {
-    console.error("Error returning book:", error.message);
+    console.error(
+      "Error returning book:",
+      error instanceof Error ? error.message : error
+    );
     res.status(500).json({
       message: "Internal server error",
     });
@@ -477,7 +481,10 @@ app.get("/stats", async (req, res) => {
 
     res.status(200).json(result.rows[0]);
   } catch (error) {
-    console.error("Error fetching statistics:", error.message);
+    console.error(
+      "Error fetching statistics:",
+      error instanceof Error ? error.message : error
+    );
 
     res.status(500).json({
       message: "Internal server error",
@@ -486,6 +493,6 @@ app.get("/stats", async (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+app.listen(env.PORT, () => {
+  console.log(`Server running on port ${env.PORT}`);
 });
