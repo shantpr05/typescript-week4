@@ -38,25 +38,11 @@ app.get("/books", async (req, res) => {
   const {
     genre,
     search,
-    sortBy = "id",
-    order = "asc",
-    page = 1,
-    limit = 10,
+    sort,
+    page ,
+    limit,
   } = queryValidation.data;
-  const allowedColumns = [
-    "id",
-    "title",
-    "genre",
-    "published_year",
-  ];
-
-  const sortColumn = allowedColumns.includes(sortBy)
-    ? sortBy
-    : "id";
-
-  const sortOrder =
-    order?.toLowerCase() === "desc" ? "DESC" : "ASC";
-
+  
   if (
     !Number.isInteger(page) ||
     page < 1 ||
@@ -88,7 +74,7 @@ app.get("/books", async (req, res) => {
     query += ` WHERE ${conditions.join(" AND ")}`;
   }
 
-  query += ` ORDER BY ${sortColumn} ${sortOrder}`;
+  query += ` ORDER BY ${sort} ASC`;
 
   values.push(limit);
   query += ` LIMIT $${values.length}`;
