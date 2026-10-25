@@ -1,0 +1,28 @@
+{
+  "name": "typescript-week4",
+  "version": "1.0.0",
+  "description": "This assignment focuses on understanding database relationships and practising SQL queries using PostgreSQL. It builds on the previous week's work with Docker, PostgreSQL, pgAdmin, and the Country Club database.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shantpr05/typescript-week4.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",  
+  "bugs": {
+    "url": "https://github.com/shantpr05/typescript-week4/issues"
+  },
+  "homepage": "https://github.com/shantpr05/typescript-week4#readme",
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "pg": "^8.23.1"
+  }
+}
