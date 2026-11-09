@@ -3,7 +3,7 @@ CREATE TABLE books (
     title VARCHAR(100) NOT NULL,
     genre VARCHAR(50),
     published_year INT
-);
+); 
 
 INSERT INTO books (title, genre, published_year)
 VALUES
@@ -35,3 +35,20 @@ UPDATE books SET author_id = 1 WHERE title = 'The Hobbit';
 UPDATE books SET author_id = 2 WHERE title = '1984';
 UPDATE books SET author_id = 3 WHERE title = 'Pippi Longstocking';
 UPDATE books SET author_id = 4 WHERE title = 'The Hunger Games';
+
+CREATE TABLE IF NOT EXISTS products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    released INTEGER NOT NULL DEFAULT 1
+);
+
+INSERT INTO products (name, description, category, released)
+VALUES
+('Laptop', 'Professional laptop', 'Tech gifts', 1),
+('Headphones', 'Wireless headphones', 'Tech gifts', 1),
+('Old Camera', 'Vintage camera', 'Gifts', 0),
+('Coffee Mug', 'Ceramic coffee mug', 'Gifts', 1),
+('Keyboard', 'Mechanical keyboard', 'Tech gifts', 0)
+ON CONFLICT DO NOTHING;
