@@ -1,53 +1,110 @@
-## Week 9 – MongoDB & Mongoose Homework
+## Week 10 – Sequelize ORM
 
 ### Overview
 
-Implemented a Library API using MongoDB, Mongoose and Express.js.
+This assignment converts the existing Express and PostgreSQL application to use Sequelize, an Object-Relational Mapper (ORM).
 
-### Technologies
+Sequelize allows the application to interact with PostgreSQL using JavaScript/TypeScript models instead of writing raw SQL queries for every database operation.
+
+### Technologies Used
 
 - Node.js
+- TypeScript
 - Express.js
-- MongoDB
-- Mongoose
-- Docker and Docker Compose
-- Insomnia
+- PostgreSQL
+- Sequelize ORM
+- Docker
+- Zod
 
-### Exercises completed
+### Project Structure
 
-1. Book model and basic API routes
-2. CRUD operations for books
-3. MongoDB connection using environment variables
-4. Schema validation
-5. Filtering, sorting and pagination
-6. Authors and document population
-7. Members and loans
-8. MongoDB aggregation and statistics
-9. Embedding vs referencing
+```text
+src/
+├── models/
+│   ├── Author.ts
+│   ├── Book.ts
+│   ├── Loan.ts
+│   └── Member.ts
+├── sequelize.ts
+└── index.ts
 
-### Running the project
-
-Navigate to the project folder:
-
-```bash
-cd week9/mongodb
+screenshots/
+ANSWERS.md
+QUERIES.md
 ```
 
-Start MongoDB:
+### Database Models and Associations
 
-```bash
-docker compose up -d
-```
+The application contains four Sequelize models:
 
-Install dependencies:
+- **Book** – stores book information.
+- **Author** – stores author information.
+- **Member** – stores library member information.
+- **Loan** – stores borrowing and returning information.
+
+The following associations are configured:
+
+- One Author can have many Books.
+- One Book belongs to one Author.
+- Members and Books have a many-to-many relationship through the Loan model.
+- Each Loan belongs to one Member and one Book.
+
+The `loans` table acts as a junction table and stores additional information about each borrowing transaction, including `borrowed_at` and `returned_at`.
+
+### Implemented API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/books` | Get all books with author information |
+| GET | `/books/:id` | Get a book by ID |
+| POST | `/books` | Create a book |
+| PUT | `/books/:id` | Update a book |
+| PATCH | `/books/:id` | Partially update a book |
+| DELETE | `/books/:id` | Delete a book |
+| GET | `/authors/:id/books` | Get an author with associated books |
+| GET | `/members/:id/loans` | Get a member with borrowed books |
+| POST | `/loans` | Create a new loan |
+| PATCH | `/loans/:id/return` | Return a borrowed book |
+| GET | `/stats` | Get book statistics |
+
+### Sequelize Features Practised
+
+- Creating Sequelize models.
+- Configuring a PostgreSQL database connection.
+- Defining one-to-many and many-to-many associations.
+- Using eager loading with `include`.
+- Using `findAll()`, `findByPk()`, `findOne()`, `create()`, `update()` and `destroy()`.
+- Using aggregate functions such as `COUNT`, `MIN` and `MAX`.
+- Understanding generated SQL queries.
+- Using junction tables for many-to-many relationships.
+- Handling database errors and API responses.
+
+### Running the Project
+
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-Create a `.env` file using `.env.example` and configure your MongoDB connection.
+2. Configure your `.env` file with the PostgreSQL connection details:
 
-Start the API:
+```env
+DB_USER=root
+DB_HOST=localhost
+DB_DATABASE=library
+DB_PASSWORD=your_password
+DB_PORT=5432
+PORT=3000
+```
+
+3. Start the PostgreSQL Docker services:
+
+```bash
+docker compose up -d
+```
+
+4. Start the development server:
 
 ```bash
 npm run dev
@@ -55,8 +112,30 @@ npm run dev
 
 The API runs at:
 
-`http://localhost:3000`
+```text
+http://localhost:3000
+```
 
-### Documentation
+### Validation
 
-See `week9/mongodb/COMPARISON.md` for the comparison between PostgreSQL and MongoDB.
+Run TypeScript type checking:
+
+```bash
+npm run typecheck
+```
+
+Run ESLint:
+
+```bash
+npm run lint
+```
+
+### Assignment Documentation
+
+- `ANSWERS.md` – answers for Skill 1 and the Skill 4 junction table question.
+- `QUERIES.md` – generated Sequelize SQL queries and equivalent SQL queries.
+- `screenshots/` – screenshots of Insomnia API tests and responses.
+
+### Conclusion
+
+This assignment provided practical experience in integrating Sequelize with an existing Express and PostgreSQL application, defining model relationships, performing CRUD operations, implementing eager loading and using ORM methods for database queries.
