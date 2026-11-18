@@ -1,15 +1,55 @@
+import sequelize from "./sequelize.js";
+import { Op, type WhereOptions } from "sequelize";
+import Book from "./models/Book.js";
+import Author from "./models/Author.js";
+import Member from "./models/Member.js";
+import Loan from "./models/Loan.js";
 import "dotenv/config";
 import { env } from "./env.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
-import { pool } from "./db.js";
 import {
   bookIdSchema,
   bookQuerySchema,
   bookSchema,
 } from "./schemas.js";
 import { z } from "zod";
+async function testDatabaseConnection() {
+  try {
+    await sequelize.authenticate();
+    console.log("Database connection established successfully");
+  } catch (error) {
+    console.error("Unable to connect to the database:", error);
+  }
+}
+Author.hasMany(Book, {
+  foreignKey: "author_id",
+});
+
+Book.belongsTo(Author, {
+  foreignKey: "author_id",
+});
+
+Member.belongsToMany(Book, {
+  through: Loan,
+  foreignKey: "member_id",
+  otherKey: "book_id",
+});
+
+Book.belongsToMany(Member, {
+  through: Loan,
+  foreignKey: "book_id",
+  otherKey: "member_id",
+});
+
+Loan.belongsTo(Member, {
+  foreignKey: "member_id",
+});
+
+Loan.belongsTo(Book, {
+  foreignKey: "book_id",
+});
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -22,8 +62,6 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Welcome to the Library API!");
 });
-
-
 
 app.get("/books", async (req, res) => {
   const queryValidation = bookQuerySchema.safeParse(req.query);
@@ -39,10 +77,10 @@ app.get("/books", async (req, res) => {
     genre,
     search,
     sort,
-    page ,
+    page,
     limit,
   } = queryValidation.data;
-  
+
   if (
     !Number.isInteger(page) ||
     page < 1 ||
@@ -55,40 +93,31 @@ app.get("/books", async (req, res) => {
     });
   }
 
-  const conditions = [];
-  const values = [];
-
-  if (genre) {
-    values.push(genre);
-    conditions.push(`genre = $${values.length}`);
-  }
-
-  if (search) {
-    values.push(`%${search}%`);
-    conditions.push(`title ILIKE $${values.length}`);
-  }
-
-  let query = "SELECT * FROM books";
-
-  if (conditions.length > 0) {
-    query += ` WHERE ${conditions.join(" AND ")}`;
-  }
-
-  query += ` ORDER BY ${sort} ASC`;
-
-  values.push(limit);
-  query += ` LIMIT $${values.length}`;
-
-  values.push((page - 1) * limit);
-  query += ` OFFSET $${values.length}`;
-
   try {
-    const result = await pool.query(query, values);
+    const where: WhereOptions = {};
+
+    if (genre) {
+      where.genre = genre;
+    }
+
+    if (search) {
+      where.title = {
+        [Op.iLike]: `%${search}%`,
+      };
+    }
+
+    const books = await Book.findAll({
+      where,
+      include: Author,
+      order: [[sort, "ASC"]],
+      limit,
+      offset: (page - 1) * limit,
+    });
 
     res.status(200).json({
       page,
       limit,
-      books: result.rows,
+      books,
     });
   } catch (error) {
     console.error(
@@ -102,7 +131,6 @@ app.get("/books", async (req, res) => {
   }
 });
 
-
 app.get("/books/:id", async (req, res) => {
   const idValidation = bookIdSchema.safeParse(req.params);
 
@@ -115,29 +143,20 @@ app.get("/books/:id", async (req, res) => {
 
   const { id } = idValidation.data;
 
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({
-      message: "Invalid book ID",
-    });
-  }
-
   try {
-    const result = await pool.query(
-      "SELECT * FROM books WHERE id = $1",
-      [id]
-    );
+    const book = await Book.findByPk(id);
 
-    if (result.rows.length === 0) {
+    if (!book) {
       return res.status(404).json({
         message: "Book not found",
       });
     }
 
-    res.status(200).json(result.rows[0]);
+    res.status(200).json(book);
   } catch (error) {
     console.error(
       "Error fetching book:",
-      error instanceof Error ? error.message : error
+      error instanceof Error ? error.message : error,
     );
 
     res.status(500).json({
@@ -145,8 +164,6 @@ app.get("/books/:id", async (req, res) => {
     });
   }
 });
-
-
 
 app.post("/books", async (req, res) => {
   const validation = bookSchema.safeParse(req.body);
@@ -161,14 +178,13 @@ app.post("/books", async (req, res) => {
   const { title, genre, published_year } = validation.data;
 
   try {
-    const result = await pool.query(
-      `INSERT INTO books (title, genre, published_year)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [title.trim(), genre, published_year],
-    );
+    const book = await Book.create({
+      title: title.trim(),
+      genre,
+      published_year,
+    });
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(book);
   } catch (error) {
     console.error(
       "Error creating book:",
@@ -204,24 +220,23 @@ app.put("/books/:id", async (req, res) => {
   }
 
   const { title, genre, published_year } = validation.data;
-  try {
-    const result = await pool.query(
-      `UPDATE books
-      SET title = $1,
-          genre = $2,
-          published_year = $3
-      WHERE id = $4
-      RETURNING *`,
-      [title, genre, published_year, id],
-    );
 
-    if (result.rows.length === 0) {
+  try {
+    const book = await Book.findByPk(id);
+
+    if (!book) {
       return res.status(404).json({
         message: "Book not found",
       });
     }
 
-    return res.status(200).json(result.rows[0]);
+    await book.update({
+      title,
+      genre,
+      published_year,
+    });
+
+    return res.status(200).json(book);
   } catch (error) {
     console.error(
       "Error updating book:",
@@ -247,34 +262,28 @@ app.delete("/books/:id", async (req, res) => {
   const { id } = idValidation.data;
 
   try {
-    const result = await pool.query(
-      "DELETE FROM books WHERE id = $1 RETURNING *",
-      [id]
-    );
+    const book = await Book.findByPk(id);
 
-    if (result.rows.length === 0) {
+    if (!book) {
       return res.status(404).json({
         message: "Book not found",
       });
     }
 
+    await book.destroy();
+
     res.status(200).json({
       message: "Book deleted successfully",
-      book: result.rows[0],
+      book,
     });
   } catch (error) {
-    console.error(
-      "Error deleting book:",
-      error instanceof Error ? error.message : error,
-    );
+    console.error("Full DELETE error:", error);
 
     res.status(500).json({
       message: "Internal server error",
     });
   }
 });
-
-
 
 app.patch("/books/:id", async (req, res) => {
   const idValidation = bookIdSchema.safeParse(req.params);
@@ -326,25 +335,26 @@ app.patch("/books/:id", async (req, res) => {
     });
   }
 
-  const setClause = updates
-    .map((field, index) => `${field} = $${index + 1}`)
-    .join(", ");
-
-  values.push(id);
 
   try {
-    const result = await pool.query(
-      `UPDATE books SET ${setClause} WHERE id = $${values.length} RETURNING *`,
-      values,
-    );
+    const book = await Book.findByPk(id);
 
-    if (result.rows.length === 0) {
+    if (!book) {
       return res.status(404).json({
         message: "Book not found",
       });
     }
 
-    res.status(200).json(result.rows[0]);
+    const updateData = {
+      ...data,
+      ...(typeof data.title === "string"
+        ? { title: data.title.trim() }
+        : {}),
+    };
+
+    await book.update(updateData);
+
+    res.status(200).json(book);
   } catch (error) {
     console.error(
       "Error updating book:",
@@ -356,6 +366,7 @@ app.patch("/books/:id", async (req, res) => {
     });
   }
 });
+
 
 app.post("/loans", async (req, res) => {
   const { member_id, book_id } = req.body;
@@ -372,46 +383,52 @@ app.post("/loans", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      `INSERT INTO loans (member_id, book_id)
-       VALUES ($1, $2)
-       RETURNING *`,
-      [member_id, book_id]
-    );
+    // Check whether the member exists
+    const member = await Member.findByPk(member_id);
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    if (
-      typeof error === "object" &&
-  error !== null &&
-  "code" in error &&
-  error.code === "23505"
-    ) {
-      return res.status(409).json({
-        message: "This book is already on loan",
-      });
-    }
+    // Check whether the book exists
+    const book = await Book.findByPk(book_id);
 
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "23503"
-    ) {
+    if (!member || !book) {
       return res.status(400).json({
         message: "Member or book does not exist",
       });
     }
 
+    // Check whether this book already has an active loan
+    const existingLoan = await Loan.findOne({
+      where: {
+        book_id,
+        returned_at: null,
+      },
+    });
+
+    if (existingLoan) {
+      return res.status(409).json({
+        message: "This book is already on loan",
+      });
+    }
+
+    // Create a new loan
+    const loan = await Loan.create({
+      member_id,
+      book_id,
+    });
+
+    res.status(201).json(loan);
+  } catch (error) {
     console.error(
       "Error creating loan:",
       error instanceof Error ? error.message : error
     );
+
     res.status(500).json({
       message: "Internal server error",
     });
   }
 });
+
+
 
 
 app.patch("/loans/:id/return", async (req, res) => {
@@ -424,29 +441,102 @@ app.patch("/loans/:id/return", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      `UPDATE loans
-       SET returned_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND returned_at IS NULL
-       RETURNING *`,
-      [id]
-    );
+    const loan = await Loan.findOne({
+      where: {
+        id,
+        returned_at: null,
+      },
+    });
 
-    if (result.rows.length === 0) {
+    if (!loan) {
       return res.status(404).json({
         message: "Active loan not found",
       });
     }
 
+    await loan.update({
+      returned_at: new Date(),
+    });
+
     res.status(200).json({
       message: "Book returned successfully",
-      loan: result.rows[0],
+      loan,
     });
   } catch (error) {
     console.error(
       "Error returning book:",
       error instanceof Error ? error.message : error
     );
+
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+});
+
+app.get("/stats", async (req, res) => {
+  try {
+    const stats = await Book.findOne({
+      attributes: [
+        [sequelize.fn("COUNT", sequelize.col("id")), "total_books"],
+        [
+          sequelize.fn("COUNT", sequelize.fn("DISTINCT", sequelize.col("genre"))),
+          "total_genres",
+        ],
+        [
+          sequelize.fn("MIN", sequelize.col("published_year")),
+          "oldest_publication_year",
+        ],
+        [
+          sequelize.fn("MAX", sequelize.col("published_year")),
+          "newest_publication_year",
+        ],
+      ],
+      raw: true,
+    });
+
+    res.status(200).json(stats);
+  } catch (error) {
+    console.error(
+      "Error fetching statistics:",
+      error instanceof Error ? error.message : error
+    );
+
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+});
+
+testDatabaseConnection();
+async function testBookModel() {
+  try {
+    const books = await Book.findAll();
+
+    console.log("Books fetched successfully:");
+    console.log(books.map((book) => book.toJSON()));
+  } catch (error) {
+    console.error("Error fetching books:", error);
+  }
+}
+testBookModel();
+
+
+app.get("/authors/:id/books", async (req, res) => {
+  try {
+    const author = await Author.findByPk(req.params.id, {
+      include: Book,
+    });
+
+    if (!author) {
+      return res.status(404).json({
+        message: "Author not found",
+      });
+    }
+
+    res.status(200).json(author);
+  } catch (error) {
+    console.error("Error fetching author's books:", error);
     res.status(500).json({
       message: "Internal server error",
     });
@@ -454,24 +544,28 @@ app.patch("/loans/:id/return", async (req, res) => {
 });
 
 
-app.get("/stats", async (req, res) => {
+app.get("/members/:id/loans", async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT
-        COUNT(*)::int AS total_books,
-        COUNT(DISTINCT genre)::int AS total_genres,
-        MIN(published_year) AS oldest_publication_year,
-        MAX(published_year) AS newest_publication_year
-      FROM books
-    `);
+    const member = await Member.findByPk(req.params.id, {
+      include: [
+        {
+          model: Book,
+          through: {
+            attributes: ["borrowed_at", "returned_at"],
+          },
+        },
+      ],
+    });
 
-    res.status(200).json(result.rows[0]);
+    if (!member) {
+      return res.status(404).json({
+        message: "Member not found",
+      });
+    }
+
+    res.status(200).json(member);
   } catch (error) {
-    console.error(
-      "Error fetching statistics:",
-      error instanceof Error ? error.message : error
-    );
-
+    console.error("Error fetching member loans:", error);
     res.status(500).json({
       message: "Internal server error",
     });
