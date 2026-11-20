@@ -26,7 +26,7 @@ describe("Pizza Shop Unit Tests", () => {
 
     expect(result).toBe(true);
   });
-
+  
   test("createPizza accepts vegetarian", () => {
     const pizza = createPizza("vegetarian");
 
