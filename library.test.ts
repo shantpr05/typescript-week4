@@ -1,6 +1,6 @@
 
 import { describe, expect, test } from "vitest";
-import { findBook, checkoutBook } from "./library";
+import { findBook, checkOutBook } from "./library";
 
 describe("Library Unit Tests", () => {
   test("findBook returns 3 copies for dune", () => {
