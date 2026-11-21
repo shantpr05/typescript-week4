@@ -13,7 +13,7 @@ const activeLoans: Loan[] = [
   { loanId: 1002, title: "neuromancer", memberId: 8 },
 ];
 
-export function findLoan(loanId: unknown) {
+export function findLoan(loanId: unknown): Loan {
   const validId = z.number().int().positive().parse(loanId);
 
   const loan = activeLoans.find((loan) => loan.loanId === validId);
@@ -23,7 +23,7 @@ export function findLoan(loanId: unknown) {
   }
 
   return {
-    id: loan.loanId,
+    loanId: loan.loanId,
     title: loan.title,
     memberId: loan.memberId,
   };

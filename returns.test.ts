@@ -4,7 +4,7 @@ import { findLoan, markReturned } from "./returns";
 describe("Return Unit Tests", () => {
   test("findLoan returns the correct loan", () => {
     expect(findLoan(1001)).toEqual({
-      id: 1001,
+      loanId: 1001,
       title: "dune",
       memberId: 7,
     });
