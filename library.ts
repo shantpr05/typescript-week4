@@ -22,6 +22,15 @@ export const LoanSchema = z.object({
 
 export type Loan = z.infer<typeof LoanSchema>;
 
+export const MemberSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().min(1),
+  membership: z.enum(["basic", "premium"]),
+  booksOnLoan: z.number().int().nonnegative(),
+});
+
+export type Member = z.infer<typeof MemberSchema>;
+
 const books: Book[] = [
   { title: "dune", copiesAvailable: 3 },
   { title: "neuromancer", copiesAvailable: 2 },
@@ -67,4 +76,13 @@ export function borrowBook(title: unknown, memberId: unknown): Loan {
   const book = findBook(title);
   const loanId = checkOutBook(book);
   return registerLoan(loanId, title, memberId);
+}
+
+export function canBorrow(member: unknown): boolean {
+  const validMember = MemberSchema.parse(member);
+
+  const borrowingLimit =
+    validMember.membership === "basic" ? 1 : 4;
+
+  return validMember.booksOnLoan <= borrowingLimit;
 }
