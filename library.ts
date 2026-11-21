@@ -5,6 +5,7 @@ export const BookTitleSchema = z.enum([
   "dune",
   "neuromancer",
   "foundation",
+  "the-alchemist",
 ]);
 
 export const BookSchema = z.object({

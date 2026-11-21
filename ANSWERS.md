@@ -1,59 +1,74 @@
-# Week 10 – Sequelize Answers
+# Week 10 – Unit Tests, Integration Tests and Zod Answers
 
-## Skill 1 – Sequelize and ORM
+## Exercise 1: A new pizza on the menu
 
-### 1. What does Sequelize do?
+### 1. Which schema stopped it, and what does this tell us about TypeScript types versus Zod checks?
 
-Sequelize acts as a translator between JavaScript/TypeScript code and a relational database. It converts model operations into SQL queries and database results into JavaScript objects.
+The PizzaTypeSchema stopped the input because vegetarian was not included in the allowed pizza types. TypeScript checks types during development and compilation, whereas Zod validates actual values at runtime. Vitest can execute the code even when TypeScript displays a type error because Vitest transforms TypeScript without necessarily performing type checking.
+### Write one more test: orderPizza("vegetarian") returns true. Which file does it belong in, and why?
 
-### 2. What does ORM stand for?
+It belongs in pizzashop.integration.test.ts because orderPizza combines multiple functions (createPizza, sendOrder and chargeCustomer). We are testing how they work together, not just one function.
 
-ORM stands for Object-Relational Mapping.
+## Exercise 2
 
-- Object: JavaScript or TypeScript objects.
-- Relational: Relational database tables, rows and columns.
-- Mapping: Connecting application objects to database tables and records.
+### 3. The bug was a spelling mistake in the error message: "cutomer" instead of "customer".
 
-### 3. What SQL does Sequelize generate for `Book.findAll()` and `Book.findByPk(3)`?
+Testing exact error messages is important because it verifies not only that the code detects invalid input, but also that it communicates the correct and consistent information to the caller. Even a small spelling mistake can cause a test to fail.
 
-For `Book.findAll()`:
+### Exercise 3 — Testing schemas
 
-```sql
-SELECT * FROM books;
-```
+### 4. Why do we use toEqual instead of toBe when testing objects?
 
-For `Book.findByPk(3)`:
+We use toEqual to compare objects because it checks whether their properties and values are the same. toBe checks whether two values are the exact same reference in memory. Since the parsed pizza object is a new object, toEqual is the correct matcher.
 
-```sql
-SELECT * FROM books WHERE id = 3;
-```
+### Exercise 4
 
-These are simplified equivalent SQL queries.
+Zod validates the input at runtime and rejects invalid book titles. TypeScript provides static type checking during development. Using z.infer allows us to derive the TypeScript Book type directly from the Zod schema, keeping the validation rules and type definition consistent.
 
-### 4. What are the options in `new Sequelize(...)`?
+### Exercise 5 — Assignment question
 
-- `host`: The database server address.
-- `port`: The database connection port.
-- `dialect`: The database type, such as PostgreSQL.
-- `logging`: Controls SQL query logging. `false` disables logging; `console.log` prints generated SQL.
+### 5. Why could a test for a random number sometimes pass even if the implementation is incorrect?
 
-### 5. What is the difference between `sequelize.sync()` and `sequelize.sync({ force: true })`?
+A test that checks a random number may sometimes pass by chance, even if the implementation is incorrect. For example, an incorrect random-number generator might occasionally produce a value within the expected range. To make the test more reliable, we can test multiple properties, such as whether the result is a number, an integer, and within the required range. We can also mock the random function to control its output.
 
-- `sequelize.sync()` creates missing tables based on the models.
-- `sequelize.sync({ force: true })` drops existing tables and recreates them. Existing data can be lost.
+### Exercise 7 – Member Validation
 
-### 6. When is plain SQL better than using Sequelize?
+**1. Which function decides which error is thrown first?**
 
-Plain SQL can be better for complex queries, advanced reports, database-specific features and situations where precise control over query performance is important.
+`borrowWithLimit()` checks the member's borrowing limit first. If the member has reached the limit, it throws `"Borrowing limit reached"`. Otherwise, it calls `borrowBook()`, which checks whether the book is available.
 
-## Skill 4 – Junction Table Question
+**2. Is this the desired behaviour?**
 
-### Why does the loan date belong in the `loans` table instead of the `books` or `members` table?
+Yes. The system should first check whether the member is allowed to borrow a book. If the member is eligible, it can then check book availability.
 
-The loan date belongs in the `loans` junction table because it describes the relationship and transaction between a member and a book.
+### Exercise 8 – Returning Books
 
-A member can borrow many books, and a book can be borrowed by different members at different times. Each borrowing is a separate loan record with its own `borrowed_at` and `returned_at` dates.
+**1. What is the difference between TypeScript, Zod and tests?**
 
-If the loan date were stored in the `books` table, a book could only have one loan date. If it were stored in the `members` table, a member could only have one loan date.
+- TypeScript checks types during development and helps catch coding mistakes.
+- Zod validates data at runtime and ensures that incoming data has the correct structure.
+- Tests check whether the functions behave as expected.
 
-The `loans` table correctly stores each borrowing event, including the member ID, book ID, borrowed date and returned date.
+**2. Why did the unit tests miss the bug?**
+
+The unit tests for `findLoan()` expected the incorrect property name `id`. The implementation and test agreed with each other, so the tests passed. The integration test checked the complete return process and exposed the mismatch when `markReturned()` expected `loanId`.
+
+### Exercise 9 – Borrowing Multiple Books
+
+**1. How do you know the refactoring did not break existing functionality?**
+
+I ran the complete test suite after refactoring. All 60 tests passed, including the existing unit and integration tests.
+
+**2. Why are tests important when refactoring?**
+
+Tests provide a safety net. They help detect unexpected changes and confirm that existing functionality still works after modifying the code.
+
+### Bonus exercise
+
+**1. Does 100% test coverage mean your code has no bugs?**
+
+No. It means all statements, branches, functions and lines were executed by tests. It does not guarantee that every possible input or situation has been tested.
+
+**2. Would coverage have warned you about the Exercise 8 bug?**
+
+No. Coverage measures which code was executed, not whether the code behaves correctly. The integration test found the bug because it checked the expected loan property.
