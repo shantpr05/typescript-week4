@@ -78,13 +78,17 @@ export function borrowBook(title: unknown, memberId: unknown): Loan {
   return registerLoan(loanId, title, memberId);
 }
 
+export function borrowLimit(membership: unknown): number {
+  const validMembership = z.enum(["basic", "premium"]).parse(membership);
+
+  return validMembership === "basic" ? 2 : 5;
+}
+
 export function canBorrow(member: unknown): boolean {
   const validMember = MemberSchema.parse(member);
+  const limit = borrowLimit(validMember.membership);
 
-  const borrowingLimit =
-    validMember.membership === "basic" ? 1 : 4;
-
-  return validMember.booksOnLoan <= borrowingLimit;
+  return validMember.booksOnLoan < limit;
 }
 
 export function borrowWithLimit(

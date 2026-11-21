@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { canBorrow, borrowWithLimit } from "./library";
+import { canBorrow, borrowWithLimit, borrowLimit } from "./library";
 
 describe("Member Unit Tests", () => {
   test("basic member can borrow 1 book", () => {
@@ -88,5 +88,15 @@ describe("Member Unit Tests", () => {
         booksOnLoan: 2,
       }),
     ).toThrow("No copies available");
+  });
+});
+
+describe("Borrow Limit Unit Tests", () => {
+  test("basic membership has a borrowing limit of 2", () => {
+    expect(borrowLimit("basic")).toBe(2);
+  });
+
+  test("premium membership has a borrowing limit of 5", () => {
+    expect(borrowLimit("premium")).toBe(5);
   });
 });
