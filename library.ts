@@ -86,3 +86,21 @@ export function canBorrow(member: unknown): boolean {
 
   return validMember.booksOnLoan <= borrowingLimit;
 }
+
+export function borrowWithLimit(
+  title: unknown,
+  member: unknown,
+): Loan {
+  const validMember = MemberSchema.parse(member);
+
+  const memberAfterBorrowing = {
+    ...validMember,
+    booksOnLoan: validMember.booksOnLoan + 1,
+  };
+
+  if (!canBorrow(memberAfterBorrowing)) {
+    throw new Error("Borrowing limit reached");
+  }
+
+  return borrowBook(title, validMember.id);
+}
