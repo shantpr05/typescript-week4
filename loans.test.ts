@@ -1,6 +1,6 @@
 
 import { describe, expect, test } from "vitest";
-import { registerLoan } from "./library";
+import { registerLoan, borrowBook } from "./library";
 
 describe("Loan Unit Tests", () => {
   test("registerLoan returns a valid loan", () => {
@@ -22,22 +22,23 @@ describe("Loan Unit Tests", () => {
   });
 
   
-test("borrowBook successfully borrows dune", () => {
-  const loan = borrowBook("dune", 7);
+  test("borrowBook successfully borrows dune", () => {
+    const loan = borrowBook("dune", 7);
 
-  expect(loan).toMatchObject({
-    title: "dune",
-    memberId: 7,
+    expect(loan).toMatchObject({
+      title: "dune",
+      memberId: 7,
+    });
+  });
+
+
+  test("borrowBook generates a loan ID between 1000 and 9999", () => {
+    const loan = borrowBook("dune", 7);
+
+    expect(loan.loanId).toBeGreaterThanOrEqual(1000);
+    expect(loan.loanId).toBeLessThanOrEqual(9999);
   });
 });
 
-test("borrowBook generates a loan ID between 1000 and 9999", () => {
-  const loan = borrowBook("dune", 7);
-
-  expect(loan.loanId).toBeGreaterThanOrEqual(1000);
-  expect(loan.loanId).toBeLessThanOrEqual(9999);
-});
- 
 
 
-});

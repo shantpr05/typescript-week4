@@ -62,3 +62,9 @@ export function registerLoan(
     memberId,
   });
 }
+
+export function borrowBook(title: unknown, memberId: unknown): Loan {
+  const book = findBook(title);
+  const loanId = checkOutBook(book);
+  return registerLoan(loanId, title, memberId);
+}
