@@ -74,7 +74,7 @@ describe("Member Unit Tests", () => {
         id: 1,
         name: "John",
         membership: "basic",
-        booksOnLoan: 1,
+        booksOnLoan: 2,
       }),
     ).toThrow("Borrowing limit reached");
   });

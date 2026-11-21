@@ -97,14 +97,35 @@ export function borrowWithLimit(
 ): Loan {
   const validMember = MemberSchema.parse(member);
 
-  const memberAfterBorrowing = {
-    ...validMember,
-    booksOnLoan: validMember.booksOnLoan + 1,
-  };
-
-  if (!canBorrow(memberAfterBorrowing)) {
+  if (!canBorrow(validMember)) {
     throw new Error("Borrowing limit reached");
   }
 
   return borrowBook(title, validMember.id);
+}
+
+export function borrowBooks(
+  titles: unknown,
+  member: unknown,
+): Loan[] {
+  const validTitles = z
+    .array(BookTitleSchema)
+    .min(1)
+    .max(3)
+    .parse(titles);
+
+  const validMember = MemberSchema.parse(member);
+
+  if (validMember.booksOnLoan + validTitles.length >
+      borrowLimit(validMember.membership)) {
+    throw new Error("Borrowing limit reached");
+  }
+
+  return validTitles.map((title) =>
+    borrowWithLimit(title, {
+      ...validMember,
+      booksOnLoan: validMember.booksOnLoan +
+        validTitles.indexOf(title),
+    }),
+  );
 }
