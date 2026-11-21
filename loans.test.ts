@@ -20,4 +20,24 @@ describe("Loan Unit Tests", () => {
   test("registerLoan rejects an invalid book title", () => {
     expect(() => registerLoan(1234, "harry potter", 7)).toThrow();
   });
+
+  
+test("borrowBook successfully borrows dune", () => {
+  const loan = borrowBook("dune", 7);
+
+  expect(loan).toMatchObject({
+    title: "dune",
+    memberId: 7,
+  });
+});
+
+test("borrowBook generates a loan ID between 1000 and 9999", () => {
+  const loan = borrowBook("dune", 7);
+
+  expect(loan.loanId).toBeGreaterThanOrEqual(1000);
+  expect(loan.loanId).toBeLessThanOrEqual(9999);
+});
+ 
+
+
 });
