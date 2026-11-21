@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { canBorrow } from "./library";
+import { canBorrow, borrowWithLimit } from "./library";
 
 describe("Member Unit Tests", () => {
   test("basic member can borrow 1 book", () => {
@@ -55,5 +55,38 @@ describe("Member Unit Tests", () => {
         booksOnLoan: 0,
       }),
     ).toThrow();
+  });
+
+  test("basic member with no books can borrow dune", () => {
+    const loan = borrowWithLimit("dune", {
+      id: 1,
+      name: "John",
+      membership: "basic",
+      booksOnLoan: 0,
+    });
+
+    expect(loan.title).toBe("dune");
+  });
+
+  test("basic member who reached the limit cannot borrow", () => {
+    expect(() =>
+      borrowWithLimit("dune", {
+        id: 1,
+        name: "John",
+        membership: "basic",
+        booksOnLoan: 1,
+      }),
+    ).toThrow("Borrowing limit reached");
+  });
+
+  test("premium member gets no copies available error for foundation", () => {
+    expect(() =>
+      borrowWithLimit("foundation", {
+        id: 2,
+        name: "Mary",
+        membership: "premium",
+        booksOnLoan: 2,
+      }),
+    ).toThrow("No copies available");
   });
 });
